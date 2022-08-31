@@ -5,12 +5,11 @@ import urllib.parse
 import webbrowser
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from io import StringIO
+from threading import Thread
 
 import uvicorn
 from fastapi import FastAPI
 from ruamel import yaml
-
-app = FastAPI()
 
 
 def load_config() -> dict:
@@ -22,19 +21,23 @@ def load_config() -> dict:
 config = load_config()
 
 
-@app.get('/')
-def callback(code: str):
-    print('Login code received!')
-    return 'Login success!'
+def get_login_code() -> str:
+    app = FastAPI()
+    result = {}
 
+    @app.get('/')
+    def callback(code: str):
+        print('Login code received!')
+        result['code'] = code
+        return 'Login success!'
 
-def run():
-    uvicorn.run(app, host="0.0.0.0", port=18275, reload=False)
+    def run():
+        uvicorn.run(app, host="0.0.0.0", port=18275, reload=False)
 
+    th = Thread(target=run)
+    th.start()
 
-if __name__ == '__main__':
-    _thread.start_new_thread(run, ())
-
+    # Open url in browser
     url = "https://login.live.com/oauth20_authorize.srf?"
     url += urllib.parse.urlencode({
         'client_id': config['ClientID'],
@@ -43,6 +46,13 @@ if __name__ == '__main__':
         'scope': 'XboxLive.signin offline_access',
         'state': 'NOT_NEEDED'
     })
-
     webbrowser.open(url)
-    time.sleep(10000000)
+
+    while 'code' not in result:
+        time.sleep(0.01)
+
+    return result['code']
+
+
+if __name__ == '__main__':
+    print(get_login_code())
