@@ -11,7 +11,7 @@ from threading import Thread
 import requests
 import uvicorn
 from fastapi import FastAPI
-from hypy_utils import ensure_dir, write, json_stringify
+from hypy_utils import ensure_dir, write, json_stringify, printc
 from ruamel import yaml
 
 config_path = ensure_dir(Path.home() / '.config' / 'mc-auth')
@@ -22,7 +22,8 @@ def load_config() -> dict:
     auth_config = config_path / 'auth_config.yml'
 
     if not auth_config.is_file():
-        print(f'Cannot find {auth_config}, please put your config file there.')
+        printc(f'&cCannot find config {auth_config}\n'
+               f'&6Please read https://github.com/hykilpikonna/mc-authn for setup instructions.')
         exit(127)
 
     with (config_path / 'auth_config.yml').open(encoding='utf-8') as f:

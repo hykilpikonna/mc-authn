@@ -3,7 +3,7 @@ import pathlib
 
 from setuptools import setup
 
-import mc_auth
+import mc_authn
 
 # The directory containing this file
 HERE = pathlib.Path(__file__).parent
@@ -13,8 +13,8 @@ README = (HERE / "README.md").read_text('utf-8')
 
 # This call to setup() does all the work
 setup(
-    name="mc-auth",
-    version=mc_auth.__version__,
+    name="mc-authn",
+    version=mc_authn.__version__,
     description="Python Authenticator for Minecraft with Microsoft",
     long_description=README,
     long_description_content_type="text/markdown",
@@ -30,13 +30,16 @@ setup(
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
     ],
-    packages=['mc_auth'],
-    package_data={'mc_auth': ['mc_auth/*']},
+    packages=['mc_authn'],
+    package_data={'mc_authn': ['mc_authn/*']},
     include_package_data=True,
-    install_requires=['setuptools', 'typing_extensions'],
+    install_requires=[
+        'setuptools', 'typing_extensions',
+        'fastapi~=0.81.0', 'uvicorn~=0.18.3', 'ruamel.yaml', 'hypy_utils>=1.0.13'
+    ],
     entry_points={
         "console_scripts": [
-            "mc-auth=mc_auth:full_login",
+            "mc-authn=mc_authn:full_login",
         ]
     }
 )

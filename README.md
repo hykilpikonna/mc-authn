@@ -1,9 +1,9 @@
-# mc-auth: Python Authenticator for Minecraft with Microsoft
+# mc-authn: Authenticator for Minecraft with Microsoft
  
 ### Installation
 
 ```sh
-pip install mc-auth
+pip install mc-authn
 ```
 
 ### Usage
