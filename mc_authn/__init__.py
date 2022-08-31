@@ -174,8 +174,11 @@ def get_mc_token(xsts_token: str, user_hash: str) -> str:
     write(out_path, json_stringify(r, indent=2))
     printc(f'&a> Success! Response saved to {out_path}')
 
+    mc_uuid = config_path / 'mc-uuid.txt'
     mc_token = config_path / 'mc-token.txt'
+    write(mc_uuid, r['username'])
     write(mc_token, r['access_token'])
+    printc(f'&a> Minecraft UUID saved to {mc_uuid}')
     printc(f'&a> Minecraft token saved to {mc_token}')
 
     return r['access_token']

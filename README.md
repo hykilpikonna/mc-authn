@@ -38,10 +38,15 @@ ClientSecret: Paste the "Value" you copied here
 
 You can now run `mc-auth` to login! After logging in, it will create a text file `~/.config/mc-auth/mc-token.txt` containing your minecraft token.
 
-In your start script for minecraft, add this line before the `java` command:
+In your start script for minecraft, add the `--accessToken` argument to the java line used to start minecraft:
 
 ```shell
-export auth_access_token=$(< ~/.config/mc-auth/mc-token.txt)
+export uuid=$(< ~/.config/mc-auth/mc-uuid.txt)
+export auth=$(< ~/.config/mc-auth/mc-token.txt)
+
+java ... net.minecraft.client.main.Main ... \
+    --accessToken ${auth} \
+    --uuid ${uuid}
 ```
 
 #### 3. Start Minecraft!
