@@ -63,7 +63,7 @@ def get_login_code() -> str:
         'scope': 'XboxLive.signin offline_access',
         'state': 'NOT_NEEDED'
     })
-    printc(f'&6Opening {url} in the browser...')
+    print(f'Opening {url} in the browser...')
     if webbrowser.open(url):
         printc(f'&6If the link does not open, please open it manually.')
     else:
