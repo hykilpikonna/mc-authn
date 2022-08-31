@@ -14,7 +14,7 @@ from fastapi import FastAPI
 from hypy_utils import ensure_dir, write, json_stringify, printc, color
 from ruamel import yaml
 
-__version__ = "1.0.2"
+__version__ = "1.0.3"
 config_path = ensure_dir(Path.home() / '.config' / 'mc-auth')
 access_token_path = config_path / 'data' / 'access_token.json'
 
@@ -43,7 +43,7 @@ def get_login_code() -> str:
 
     @app.get('/')
     def callback(code: str):
-        print('Login code received!')
+        printc('&a> Login code received!')
         result['code'] = code
         return 'Login success! You can close this window now.'
 
@@ -63,11 +63,11 @@ def get_login_code() -> str:
         'scope': 'XboxLive.signin offline_access',
         'state': 'NOT_NEEDED'
     })
-    print(f'&6Opening {url} in the browser...')
+    printc(f'&6Opening {url} in the browser...')
     if webbrowser.open(url):
-        print(f'&6If the link does not open, please open it manually.')
+        printc(f'&6If the link does not open, please open it manually.')
     else:
-        print(f'&cFailed to open the link automatically, please open it manually.')
+        printc(f'&cFailed to open the link automatically, please open it manually.')
 
     while 'code' not in result:
         time.sleep(0.01)
