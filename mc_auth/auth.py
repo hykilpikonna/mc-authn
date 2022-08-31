@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+import json
 import time
 import time
 import urllib.parse
@@ -12,6 +15,7 @@ from hypy_utils import ensure_dir, write, json_stringify
 from ruamel import yaml
 
 config_path = ensure_dir(Path.home() / '.config' / 'mc-auth')
+access_token_path = config_path / 'debug' / 'access_token.json'
 
 
 def load_config() -> dict:
@@ -67,7 +71,6 @@ def get_login_code() -> str:
 
 def get_access_token(login_code: str) -> str:
     print('Getting access token with login code...')
-    out_path = config_path / 'debug' / 'access_token.json'
 
     r = http.post("https://login.live.com/oauth20_token.srf", data={
         'client_id': config['ClientID'],
@@ -77,8 +80,32 @@ def get_access_token(login_code: str) -> str:
         'redirect_uri': 'http://localhost:18275'
     }).json()
 
-    write(out_path, json_stringify(r, indent=2))
-    print(f'> Success! Response saved to {out_path}')
+    write(access_token_path, json_stringify(r, indent=2))
+    print(f'> Success! Response saved to {access_token_path}')
+
+    return r['access_token']
+
+
+def get_refresh_token() -> str | None:
+    if not access_token_path.is_file():
+        return None
+    j: dict = json.loads(access_token_path.read_text('utf-8'))
+    return j.get('refresh_token')
+
+
+def refresh_access_token(refresh_token: str) -> str:
+    print('Refreshing access token with refresh token...')
+
+    r = http.post("https://login.live.com/oauth20_token.srf", data={
+        'client_id': config['ClientID'],
+        'client_secret': config['ClientSecret'],
+        'refresh_token': refresh_token,
+        'grant_type': 'refresh_token',
+        'redirect_uri': 'http://localhost:18275'
+    }).json()
+
+    write(access_token_path, json_stringify(r, indent=2))
+    print(f'> Success! Response saved to {access_token_path}')
 
     return r['access_token']
 
@@ -119,12 +146,25 @@ def get_mc_token(token: str) -> str:
     write(out_path, json_stringify(r, indent=2))
     print(f'> Success! Response saved to {out_path}')
 
+    mc_token = config_path / 'mc-token.txt'
+    write(mc_token, r['Token'])
+    print(f'> Minecraft token saved to {mc_token}')
+
     return r['Token']
 
 
-if __name__ == '__main__':
-    code = get_login_code()
-    t1 = get_access_token(code)
+def full_login():
+    refresh_token = get_refresh_token()
+
+    if refresh_token:
+        t1 = refresh_access_token(refresh_token)
+    else:
+        code = get_login_code()
+        t1 = get_access_token(code)
+
     t2 = get_xbox_live_token(t1)
     t3 = get_mc_token(t2)
-    print(f'Your token is {t3}')
+
+
+if __name__ == '__main__':
+    full_login()
