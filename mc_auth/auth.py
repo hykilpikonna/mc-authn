@@ -15,7 +15,7 @@ from hypy_utils import ensure_dir, write, json_stringify
 from ruamel import yaml
 
 config_path = ensure_dir(Path.home() / '.config' / 'mc-auth')
-access_token_path = config_path / 'debug' / 'access_token.json'
+access_token_path = config_path / 'data' / 'access_token.json'
 
 
 def load_config() -> dict:
@@ -122,7 +122,7 @@ def get_xbox_live_token(token: str) -> str:
         },
         "RelyingParty": "http://auth.xboxlive.com",
         "TokenType": "JWT"
-    }, headers={'Accept': 'application/json', 'Content-Type': 'application/json'}).json()
+    }).json()
 
     write(out_path, json_stringify(r, indent=2))
     print(f'> Success! Response saved to {out_path}')
@@ -130,9 +130,12 @@ def get_xbox_live_token(token: str) -> str:
     return r['Token']
 
 
-def get_mc_token(token: str) -> str:
-    print('Logging into Minecraft with Xbox Live token...')
-    out_path = config_path / 'debug' / 'mc_token.json'
+def get_xsts_token(token: str) -> tuple[str, str]:
+    """
+    :return: token, user hash
+    """
+    print('Logging into XSTS with Xbox Live token...')
+    out_path = config_path / 'debug' / 'xsts_token.json'
 
     r = http.post('https://xsts.auth.xboxlive.com/xsts/authorize', json={
         "Properties": {
@@ -146,11 +149,26 @@ def get_mc_token(token: str) -> str:
     write(out_path, json_stringify(r, indent=2))
     print(f'> Success! Response saved to {out_path}')
 
+    return r['Token'], r['DisplayClaims']['xui'][0]['uhs']
+
+
+def get_mc_token(xsts_token: str, user_hash: str) -> str:
+    print('Logging into Minecraft with XSTS token...')
+    out_path = config_path / 'debug' / 'mc_token.json'
+
+    r = http.post('https://api.minecraftservices.com/authentication/login_with_xbox', json={
+        "identityToken": f"XBL3.0 x={user_hash};{xsts_token}",
+        "ensureLegacyEnabled": True
+    }).json()
+
+    write(out_path, json_stringify(r, indent=2))
+    print(f'> Success! Response saved to {out_path}')
+
     mc_token = config_path / 'mc-token.txt'
-    write(mc_token, r['Token'])
+    write(mc_token, r['access_token'])
     print(f'> Minecraft token saved to {mc_token}')
 
-    return r['Token']
+    return r['access_token']
 
 
 def full_login():
@@ -163,7 +181,8 @@ def full_login():
         t1 = get_access_token(code)
 
     t2 = get_xbox_live_token(t1)
-    t3 = get_mc_token(t2)
+    t3, uhs = get_xsts_token(t2)
+    t4 = get_mc_token(t3, uhs)
 
 
 if __name__ == '__main__':
