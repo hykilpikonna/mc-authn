@@ -14,7 +14,7 @@ from fastapi import FastAPI
 from hypy_utils import ensure_dir, write, json_stringify, printc, color
 from ruamel import yaml
 
-__version__ = "1.0.3"
+__version__ = "1.0.5"
 config_path = ensure_dir(Path.home() / '.config' / 'mc-auth')
 access_token_path = config_path / 'data' / 'access_token.json'
 
@@ -120,7 +120,7 @@ def refresh_access_token(refresh_token: str) -> str:
 
 def get_xbox_live_token(token: str) -> str:
     printc('&6Logging into Xbox Live with access token...')
-    out_path = config_path / 'debug' / 'xbox_live_token.json'
+    out_path = config_path / 'data' / 'xbox_live_token.json'
 
     r = http.post('https://user.auth.xboxlive.com/user/authenticate', json={
         "Properties": {
@@ -144,7 +144,7 @@ def get_xsts_token(token: str) -> tuple[str, str]:
     :return: token, user hash
     """
     printc('&6Logging into XSTS with Xbox Live token...')
-    out_path = config_path / 'debug' / 'xsts_token.json'
+    out_path = config_path / 'data' / 'xsts_token.json'
 
     r = http.post('https://xsts.auth.xboxlive.com/xsts/authorize', json={
         "Properties": {
@@ -164,7 +164,7 @@ def get_xsts_token(token: str) -> tuple[str, str]:
 
 def get_mc_token(xsts_token: str, user_hash: str) -> str:
     printc('&6Logging into Minecraft with XSTS token...')
-    out_path = config_path / 'debug' / 'mc_token.json'
+    out_path = config_path / 'data' / 'mc_token.json'
 
     r = http.post('https://api.minecraftservices.com/authentication/login_with_xbox', json={
         "identityToken": f"XBL3.0 x={user_hash};{xsts_token}",
@@ -172,16 +172,35 @@ def get_mc_token(xsts_token: str, user_hash: str) -> str:
     }).json()
 
     write(out_path, json_stringify(r, indent=2))
+    assert 'access_token' in r, color('&c> Request failed. Token is not in the response.')
     printc(f'&a> Success! Response saved to {out_path}')
 
-    mc_uuid = config_path / 'mc-uuid.txt'
     mc_token = config_path / 'mc-token.txt'
-    write(mc_uuid, r['username'])
     write(mc_token, r['access_token'])
-    printc(f'&a> Minecraft UUID saved to {mc_uuid}')
     printc(f'&a> Minecraft token saved to {mc_token}')
 
     return r['access_token']
+
+
+def get_mc_info(mc_token: str):
+    printc('&6Getting Minecraft username and UUID...')
+    out_path = config_path / 'data' / 'mc_info.json'
+
+    r = http.get('https://api.minecraftservices.com/minecraft/profile',
+                 headers={'Authorization': f'Bearer {mc_token}'}).json()
+
+    write(out_path, json_stringify(r, indent=2))
+    assert 'id' in r and 'name' in r, color('&c> Request failed. ID and name are not in the response.')
+    printc(f'&a> Success! Response saved to {out_path}')
+
+    fp = config_path / 'mc-uuid.txt'
+    write(fp, r['id'])
+    printc(f'&a> Minecraft UUID saved to {fp}')
+    fp = config_path / 'mc-name.txt'
+    write(fp, r['name'])
+    printc(f'&a> Minecraft name saved to {fp}')
+
+    printc(f'&a> All Success! Logged in as {r["name"]}')
 
 
 def full_login():
@@ -203,6 +222,8 @@ def full_login():
     t3, uhs = get_xsts_token(t2)
     print()
     t4 = get_mc_token(t3, uhs)
+    print()
+    get_mc_info(t4)
 
 
 if __name__ == '__main__':
